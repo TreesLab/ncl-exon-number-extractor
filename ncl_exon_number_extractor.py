@@ -56,7 +56,7 @@ class ExonExtractor:
         # generate the total length of exons in one transcript
         for tid, tid_gp in groupby(self.exons, key=itemgetter(4)):
             tid_gp = list(tid_gp)
-            self.transcripts[tid] = (sum(map(itemgetter(6), tid_gp)), tid_gp[0][7])
+            self.transcripts[tid] = (tid_gp[0][7], sum(map(itemgetter(6), tid_gp)))
 
                 
 class JunctionSitesDB:
