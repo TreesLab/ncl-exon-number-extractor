@@ -39,18 +39,17 @@ class ExonExtractor:
             data = line.rstrip('\n').split('\t')
             region_type = data[2]
 
-            if region_type == 'transcript':
-                tid = re.search(self.tid_pattern, data[8]).group(1)
-                transcript_len = int(data[4]) - int(data[3]) + 1
-                self.transcripts[tid] = transcript_len
-
-            elif region_type == 'exon':
+            if region_type == 'exon':
                 basic_info = self._basic_info_getter(data)
                 exon_tid = re.search(self.tid_pattern, data[8]).group(1)
                 exon_number = re.search(self.exon_number_pattern, data[8]).group(1)
-                assert(exon_tid == tid)
+                exon_len = int(data[4]) - int(data[3]) + 1
 
-                self.exons.append(basic_info + [exon_tid, exon_number])
+                self.exons.append(basic_info + [exon_tid, exon_number, exon_len])
+
+        # generate the total length of exons in one transcript
+        for tid, tid_gp in groupby(self.exons, key=itemgetter(4)):
+            self.transcripts[tid] = sum(map(itemgetter(6), tid_gp))
 
                 
 class JunctionSitesDB:
