@@ -23,6 +23,7 @@ class ExonExtractor:
     def __init__(self):
         self.tid_pattern = re.compile('transcript_id "([^;]*)";')
         self.exon_number_pattern = re.compile('exon_number ([0-9]*);')
+        self.transcript_type_pattern = re.compile('transcript_type "([^;]*)";')
 
     def _basic_info_getter(self, data):
         return [data[0], data[3], data[4], data[6]]
@@ -43,13 +44,19 @@ class ExonExtractor:
                 basic_info = self._basic_info_getter(data)
                 exon_tid = re.search(self.tid_pattern, data[8]).group(1)
                 exon_number = re.search(self.exon_number_pattern, data[8]).group(1)
+
+                transcript_type = re.search(self.transcript_type_pattern, data[8]).group(1)
+                is_protein_coding = int(transcript_type == "protein_coding")
+
                 exon_len = int(data[4]) - int(data[3]) + 1
 
-                self.exons.append(basic_info + [exon_tid, exon_number, exon_len])
+                self.exons.append(basic_info + \
+                                    [exon_tid, exon_number, exon_len, is_protein_coding])
 
         # generate the total length of exons in one transcript
         for tid, tid_gp in groupby(self.exons, key=itemgetter(4)):
-            self.transcripts[tid] = sum(map(itemgetter(6), tid_gp))
+            tid_gp = list(tid_gp)
+            self.transcripts[tid] = (sum(map(itemgetter(6), tid_gp)), tid_gp[0][7])
 
                 
 class JunctionSitesDB:
@@ -100,7 +107,7 @@ class JunctionSitesDB:
         
         
 def get_longest_tid(tids, tid_len_dict):
-    the_longest = max(tids, key=lambda tid: (tid_len_dict[tid], tid))
+    the_longest = max(tids, key=lambda tid: tid_len_dict[tid])
     return the_longest
 
 def get_longest_common_tid(donor_tids, accepter_tids, tid_len_dict):
