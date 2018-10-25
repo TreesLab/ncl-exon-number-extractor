@@ -164,7 +164,7 @@ if __name__ == "__main__":
                                                             exon_extractor.transcripts)
             if the_longest_common_tid:
                 res_data = ncl_event.raw_data \
-                            + [the_longest_common_tid, \
+                            + [the_longest_common_tid, the_longest_common_tid, \
                                 str(get_tid_exon_number(donor, the_longest_common_tid)), \
                                 str(get_tid_exon_number(accepter, the_longest_common_tid))]
                 print(*res_data, sep='\t')
@@ -185,7 +185,7 @@ if __name__ == "__main__":
             the_longest_tid_accepter = get_longest_tid(accepter_tids, \
                                                         exon_extractor.transcripts)
             res_data = ncl_event.raw_data \
-                        + ["{}|{}".format(the_longest_tid_donor, the_longest_tid_accepter), \
+                        + [the_longest_tid_donor, the_longest_tid_accepter, \
                             str(get_tid_exon_number(donor, the_longest_tid_donor)), \
                             str(get_tid_exon_number(accepter, the_longest_tid_accepter))]
             print(*res_data, sep='\t')
