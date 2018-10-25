@@ -22,6 +22,7 @@ class NCLevent:
 class ExonExtractor:
     def __init__(self):
         self.tid_pattern = re.compile('transcript_id "([^;]*)";')
+        self.exon_number_pattern = re.compile('exon_number ([0-9]*);')
 
     def _basic_info_getter(self, data):
         return [data[0], data[3], data[4], data[6]]
@@ -30,7 +31,6 @@ class ExonExtractor:
         self.transcripts = {}
         self.exons = []
         
-        exon_count = 0
         for line in data_iter:
             
             if line.startswith('#'):
@@ -43,17 +43,14 @@ class ExonExtractor:
                 tid = re.search(self.tid_pattern, data[8]).group(1)
                 transcript_len = int(data[4]) - int(data[3]) + 1
                 self.transcripts[tid] = transcript_len
-                
-                exon_count = 0
 
             elif region_type == 'exon':
-                exon_count += 1
-
                 basic_info = self._basic_info_getter(data)
                 exon_tid = re.search(self.tid_pattern, data[8]).group(1)
+                exon_number = re.search(self.exon_number_pattern, data[8]).group(1)
                 assert(exon_tid == tid)
 
-                self.exons.append(basic_info + [exon_tid, exon_count])
+                self.exons.append(basic_info + [exon_tid, exon_number])
 
                 
 class JunctionSitesDB:
