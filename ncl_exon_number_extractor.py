@@ -106,18 +106,26 @@ class JunctionSitesDB:
             return res
         
         
-def get_longest_tid(tids, tid_len_dict):
-    the_longest = max(tids, key=lambda tid: tid_len_dict[tid])
+def get_longest_tid(tids, tid_len_dict, show_all=False):
+    if show_all:
+        the_longest_len = max(map(tid_len_dict.get, tids))
+        the_longest = [tid for tid in tids if tid_len_dict.get(tid) == the_longest_len]
+    else:
+        the_longest = [max(tids, key=lambda tid: tid_len_dict[tid])]
+
     return the_longest
 
-def get_longest_common_tid(donor_tids, accepter_tids, tid_len_dict):
+
+def get_longest_common_tid(donor_tids, accepter_tids, tid_len_dict, show_all=False):
     common = set(donor_tids) & set(accepter_tids)
     if len(common) > 0:
-        the_longest = get_longest_tid(common, tid_len_dict)
+        the_longest = get_longest_tid(common, tid_len_dict, show_all=show_all)
         return the_longest
 
-def get_tid_exon_number(tid_data, tid):
-    return dict(tid_data).get(tid)
+
+def get_tid_exon_number(tid_data, tids):
+    tid_data_dict = dict(tid_data)
+    return list(map(tid_data_dict.get, tids))
 
 
 def print_usage():
@@ -141,6 +149,12 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print_usage()
         exit(1)
+    
+    if (len(sys.argv) >= 3) and (sys.argv[2] == 'all'):
+        show_all = True
+    else:
+        show_all = False
+    
 
     # generate db
     exon_extractor = ExonExtractor()
@@ -161,31 +175,32 @@ if __name__ == "__main__":
 
         if ncl_event.intragenic:
             the_longest_common_tid = get_longest_common_tid(donor_tids, accepter_tids, \
-                                                            exon_extractor.transcripts)
+                                                            exon_extractor.transcripts, \
+                                                            show_all=show_all)
             if the_longest_common_tid:
                 res_data = ncl_event.raw_data \
-                            + [the_longest_common_tid, the_longest_common_tid, \
-                                str(get_tid_exon_number(donor, the_longest_common_tid)), \
-                                str(get_tid_exon_number(accepter, the_longest_common_tid))]
+                            + [','.join(the_longest_common_tid), \
+                                ','.join(the_longest_common_tid), \
+                                ','.join(get_tid_exon_number(donor, the_longest_common_tid)), \
+                                ','.join(get_tid_exon_number(accepter, the_longest_common_tid))]
                 print(*res_data, sep='\t')
                 
             else:
                 if (',' in ncl_event.donor.gene) or (',' in ncl_event.accepter.gene):
                     ncl_event.intragenic = 0
                 else:
-                    if len(sys.argv) >= 3:
-                        if sys.argv[2] == 'all':
-                            ncl_event.intragenic = 0
-                    else:
-                        res_data = ncl_event.raw_data + ['', '', '']
-                        print(*res_data, sep='\t')
+                    res_data = ncl_event.raw_data + ['', '', '']
+                    print(*res_data, sep='\t')
         
         if not ncl_event.intragenic:
-            the_longest_tid_donor = get_longest_tid(donor_tids, exon_extractor.transcripts)
+            the_longest_tid_donor = get_longest_tid(donor_tids, exon_extractor.transcripts, \
+                                                    show_all=show_all)
             the_longest_tid_accepter = get_longest_tid(accepter_tids, \
-                                                        exon_extractor.transcripts)
+                                                        exon_extractor.transcripts, \
+                                                        show_all=show_all)
             res_data = ncl_event.raw_data \
-                        + [the_longest_tid_donor, the_longest_tid_accepter, \
-                            str(get_tid_exon_number(donor, the_longest_tid_donor)), \
-                            str(get_tid_exon_number(accepter, the_longest_tid_accepter))]
+                        + [','.join(the_longest_tid_donor), \
+                            ','.join(the_longest_tid_accepter), \
+                            ','.join(get_tid_exon_number(donor, the_longest_tid_donor)), \
+                            ','.join(get_tid_exon_number(accepter, the_longest_tid_accepter))]
             print(*res_data, sep='\t')
