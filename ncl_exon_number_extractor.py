@@ -189,7 +189,7 @@ if __name__ == "__main__":
                 if (',' in ncl_event.donor.gene) or (',' in ncl_event.accepter.gene):
                     ncl_event.intragenic = 0
                 else:
-                    res_data = ncl_event.raw_data + ['', '', '']
+                    res_data = ncl_event.raw_data + ['', '', '', '']
                     print(*res_data, sep='\t')
         
         if not ncl_event.intragenic:
