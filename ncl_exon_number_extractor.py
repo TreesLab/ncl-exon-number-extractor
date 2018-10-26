@@ -101,12 +101,16 @@ class JunctionSitesDB:
         try:
             res = db[junc_site.chr][junc_site.strand][junc_site.pos]
         except KeyError:
-            print("No such site: {}".format(junc_site))
+            print("No such {} site: {}".format(donor_accepter, junc_site), file=sys.stderr)
+            return []
         else:
             return res
         
         
 def get_longest_tid(tids, tid_len_dict, show_all=False):
+    if tids == []:
+        return []
+
     the_longest_len = max(map(tid_len_dict.get, tids))
     the_longest = sorted([tid for tid in tids if tid_len_dict.get(tid) == the_longest_len])
     
