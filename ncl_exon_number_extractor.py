@@ -107,11 +107,11 @@ class JunctionSitesDB:
         
         
 def get_longest_tid(tids, tid_len_dict, show_all=False):
-    if show_all:
-        the_longest_len = max(map(tid_len_dict.get, tids))
-        the_longest = [tid for tid in tids if tid_len_dict.get(tid) == the_longest_len]
-    else:
-        the_longest = [max(tids, key=lambda tid: tid_len_dict[tid])]
+    the_longest_len = max(map(tid_len_dict.get, tids))
+    the_longest = sorted([tid for tid in tids if tid_len_dict.get(tid) == the_longest_len])
+    
+    if not show_all:
+        the_longest = [the_longest[0]]
 
     return the_longest
 
