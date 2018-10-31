@@ -132,6 +132,17 @@ def get_tid_exon_number(tid_data, tids):
     return list(map(tid_data_dict.get, tids))
 
 
+def print_results(results):
+    def list_to_str(obj):
+        if type(obj) == list:
+            return ','.join(map(str, obj))
+        else:
+            return obj
+
+    out_res = list(map(list_to_str, results))
+    print(*out_res, sep='\t')
+
+
 def print_usage():
     usage_msg = \
         "Usage:\n"\
@@ -177,18 +188,19 @@ if __name__ == "__main__":
         donor_tids = list(map(itemgetter(0), donor))
         accepter_tids = list(map(itemgetter(0), accepter))
 
+        res_data = ncl_event.raw_data[:]
+
         if ncl_event.intragenic:
             the_longest_common_tid = get_longest_common_tid(donor_tids, accepter_tids, \
                                                             exon_extractor.transcripts, \
                                                             show_all=show_all)
             if the_longest_common_tid:
-                res_data = ncl_event.raw_data \
-                            + [','.join(the_longest_common_tid), \
-                                ','.join(the_longest_common_tid), \
-                                ','.join(get_tid_exon_number(donor, the_longest_common_tid)), \
-                                ','.join(get_tid_exon_number(accepter, the_longest_common_tid))]
-                print(*res_data, sep='\t')
-                
+                exon_number_donor = get_tid_exon_number(donor, the_longest_common_tid)
+                exon_number_accepter = get_tid_exon_number(accepter, the_longest_common_tid)
+                res_data += [the_longest_common_tid, \
+                             the_longest_common_tid, \
+                             exon_number_donor, \
+                             exon_number_accepter]
             else:
                 ncl_event.intragenic = 0
         
@@ -198,9 +210,13 @@ if __name__ == "__main__":
             the_longest_tid_accepter = get_longest_tid(accepter_tids, \
                                                         exon_extractor.transcripts, \
                                                         show_all=show_all)
-            res_data = ncl_event.raw_data \
-                        + [','.join(the_longest_tid_donor), \
-                            ','.join(the_longest_tid_accepter), \
-                            ','.join(get_tid_exon_number(donor, the_longest_tid_donor)), \
-                            ','.join(get_tid_exon_number(accepter, the_longest_tid_accepter))]
-            print(*res_data, sep='\t')
+
+            exon_number_donor = get_tid_exon_number(donor, the_longest_tid_donor)
+            exon_number_accepter = get_tid_exon_number(accepter, the_longest_tid_accepter)
+
+            res_data += [the_longest_tid_donor, \
+                         the_longest_tid_accepter, \
+                         exon_number_donor, \
+                         exon_number_accepter]
+
+        print_results(res_data)
