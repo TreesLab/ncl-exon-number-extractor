@@ -153,6 +153,22 @@ class FlankingIntronDB:
             return intron_len
 
 
+class ExonsLengthDB:
+    def __init__(self):
+        self.db = {}
+        
+    def generate_db(self, exons_data):
+        for tid, tid_gp in groupby(exons_data, key=itemgetter(4)):
+            tid_gp = list(tid_gp)
+            exon_lens = list(map(itemgetter(6), tid_gp))
+            self.db[tid] = exon_lens
+            
+    def get_total_len_of_intermediate_exons(self, tid, exon_number_1, exon_number_2):
+        start_ind = int(exon_number_1) - 1
+        stop_ind = int(exon_number_2) - 1 + 1
+        return sum(self.db[tid][start_ind:stop_ind])
+
+
 
 def get_longest_tid(tids, tid_len_dict, show_all=False):
     if tids == []:
@@ -183,6 +199,12 @@ def get_flanking_introns(intron_db, tids, exon_numbers, donor_accepter):
     return list(map(lambda tid, exon_number: \
                         intron_db.get_flanking_intron(tid, exon_number, donor_accepter), \
                     tids, exon_numbers))
+
+
+def get_lens_of_intermediate_exons(exons_len_db, tids, start_exons, stop_exons):
+    return list(map(lambda tid, en1, en2: \
+                        exons_len_db.get_total_len_of_intermediate_exons(tid, en1, en2), \
+                    tids, start_exons, stop_exons))
 
 
 def print_results(results):
@@ -240,6 +262,11 @@ if __name__ == "__main__":
     intron_db = FlankingIntronDB()
     intron_db.generate_db(intron_extractor.introns)
 
+    ## intermediate exons
+    exons_len_db = ExonsLengthDB()
+    exons_len_db.generate_db(exon_extractor.exons)
+
+
     # get exon numbers
     for line in sys.stdin:
         data = line.rstrip('\n').split('\t')
@@ -250,7 +277,8 @@ if __name__ == "__main__":
         accepter_tids = list(map(itemgetter(0), accepter))
 
         res_data = []
-
+        len_of_intermediate_exons = []
+        
         if ncl_event.intragenic:
             the_longest_common_tid = get_longest_common_tid(donor_tids, accepter_tids, \
                                                             exon_extractor.transcripts, \
@@ -262,6 +290,13 @@ if __name__ == "__main__":
                              the_longest_common_tid, \
                              exon_number_donor, \
                              exon_number_accepter]
+
+                # intermediate exons
+                len_of_intermediate_exons = get_lens_of_intermediate_exons(\
+                                                exons_len_db, \
+                                                the_longest_common_tid, \
+                                                exon_number_accepter, \
+                                                exon_number_donor)
             else:
                 ncl_event.intragenic = 0
         
@@ -291,6 +326,11 @@ if __name__ == "__main__":
                                                             res_data[3], \
                                                             'accepter')
         res_data += [flanking_intron_len_donor, flanking_intron_len_accepter]
+
+
+        # intermediate exons
+        res_data += [len_of_intermediate_exons]
+
 
         # print results
         res_data = ncl_event.raw_data + res_data
