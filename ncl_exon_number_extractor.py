@@ -190,11 +190,7 @@ if __name__ == "__main__":
                 print(*res_data, sep='\t')
                 
             else:
-                if (',' in ncl_event.donor.gene) or (',' in ncl_event.accepter.gene):
-                    ncl_event.intragenic = 0
-                else:
-                    res_data = ncl_event.raw_data + ['', '', '', '']
-                    print(*res_data, sep='\t')
+                ncl_event.intragenic = 0
         
         if not ncl_event.intragenic:
             the_longest_tid_donor = get_longest_tid(donor_tids, exon_extractor.transcripts, \
