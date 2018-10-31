@@ -58,7 +58,33 @@ class ExonExtractor:
             tid_gp = list(tid_gp)
             self.transcripts[tid] = (tid_gp[0][7], sum(map(itemgetter(6), tid_gp)))
 
-                
+
+class IntronExtractor:
+    def _get_intron(self, exon1, exon2):
+        assert exon1[4] == exon2[4]
+        
+        strand = exon1[3]
+        if strand == '+':
+            intron_start = int(exon1[2]) + 1
+            intron_end = int(exon2[1]) - 1
+            
+        elif strand == '-':
+            intron_start = int(exon2[2]) + 1
+            intron_end = int(exon1[1]) - 1
+        
+        assert intron_start <= intron_end
+
+        intron = [exon1[0], intron_start, intron_end, strand, exon1[4], exon1[5], exon2[5], intron_end - intron_start + 1]    
+        return intron
+    
+    def extract(self, exons_data):
+        self.introns = []
+        for tid, tid_gp in groupby(exons_data, key=itemgetter(4)):
+            tid_gp = list(tid_gp)
+            for i in range(len(tid_gp) - 1):
+                self.introns.append(self._get_intron(tid_gp[i], tid_gp[i+1]))
+
+
 class JunctionSitesDB:
     def __init__(self):
         self.ncl_donor = {}
@@ -106,7 +132,28 @@ class JunctionSitesDB:
         else:
             return res
         
-        
+
+class FlankingIntronDB:
+    def __init__(self):
+        self.db = {}
+    
+    def generate_db(self, introns_data):
+        for tid, tid_gp in groupby(introns_data, key=itemgetter(4)):
+            tid_gp = list(tid_gp)
+            donor_introns = dict(map(itemgetter(5, 7), tid_gp))
+            accepter_introns = dict(map(itemgetter(6, 7), tid_gp))
+            self.db[tid] = {'donor': donor_introns, 'accepter': accepter_introns}
+            
+    def get_flanking_intron(self, tid, exon_number, donor_accepter):
+        try:
+            intron_len = self.db[tid][donor_accepter][exon_number]
+        except KeyError:
+            return "no intron"
+        else:
+            return intron_len
+
+
+
 def get_longest_tid(tids, tid_len_dict, show_all=False):
     if tids == []:
         return []
@@ -130,6 +177,12 @@ def get_longest_common_tid(donor_tids, accepter_tids, tid_len_dict, show_all=Fal
 def get_tid_exon_number(tid_data, tids):
     tid_data_dict = dict(tid_data)
     return list(map(tid_data_dict.get, tids))
+
+
+def get_flanking_introns(intron_db, tids, exon_numbers, donor_accepter):
+    return list(map(lambda tid, exon_number: \
+                        intron_db.get_flanking_intron(tid, exon_number, donor_accepter), \
+                    tids, exon_numbers))
 
 
 def print_results(results):
@@ -172,12 +225,20 @@ if __name__ == "__main__":
     
 
     # generate db
+    ## exons
     exon_extractor = ExonExtractor()
     with open_file(sys.argv[1]) as anno_data:
         exon_extractor.extract(anno_data)
 
     junc_sites_db = JunctionSitesDB()
     junc_sites_db.generate_db(exon_extractor.exons)
+
+    ## introns
+    intron_extractor = IntronExtractor()
+    intron_extractor.extract(exon_extractor.exons)
+
+    intron_db = FlankingIntronDB()
+    intron_db.generate_db(intron_extractor.introns)
 
     # get exon numbers
     for line in sys.stdin:
@@ -188,7 +249,7 @@ if __name__ == "__main__":
         donor_tids = list(map(itemgetter(0), donor))
         accepter_tids = list(map(itemgetter(0), accepter))
 
-        res_data = ncl_event.raw_data[:]
+        res_data = []
 
         if ncl_event.intragenic:
             the_longest_common_tid = get_longest_common_tid(donor_tids, accepter_tids, \
@@ -219,4 +280,18 @@ if __name__ == "__main__":
                          exon_number_donor, \
                          exon_number_accepter]
 
+
+        # lens of flanking introns
+        flanking_intron_len_donor = get_flanking_introns(intron_db,\
+                                                         res_data[0], \
+                                                         res_data[2], \
+                                                         'donor')
+        flanking_intron_len_accepter = get_flanking_introns(intron_db, \
+                                                            res_data[1], \
+                                                            res_data[3], \
+                                                            'accepter')
+        res_data += [flanking_intron_len_donor, flanking_intron_len_accepter]
+
+        # print results
+        res_data = ncl_event.raw_data + res_data
         print_results(res_data)
