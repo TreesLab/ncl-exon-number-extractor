@@ -169,6 +169,19 @@ class ExonsLengthDB:
         return sum(self.db[tid][start_ind:stop_ind])
 
 
+class TranscriptExonsDB:
+    def __init__(self):
+        self.db = {}
+        
+    def generate_db(self, exons_data):
+        for tid, tid_gp in groupby(exons_data, key=itemgetter(4)):
+            num_of_exons = len(list(tid_gp))
+            self.db[tid] = num_of_exons
+            
+    def get_num_of_exons(self, tids):
+        return [self.db[tid] for tid in tids]
+
+
 
 def get_longest_tid(tids, tid_len_dict, show_all=False):
     if tids == []:
@@ -266,6 +279,10 @@ if __name__ == "__main__":
     exons_len_db = ExonsLengthDB()
     exons_len_db.generate_db(exon_extractor.exons)
 
+    ## total number of exons
+    num_of_exons_db = TranscriptExonsDB()
+    num_of_exons_db.generate_db(exon_extractor.exons)
+
 
     # get exon numbers
     for line in sys.stdin:
@@ -330,6 +347,10 @@ if __name__ == "__main__":
 
         # intermediate exons
         res_data += [len_of_intermediate_exons]
+
+        # total number of exons
+        res_data += [num_of_exons_db.get_num_of_exons(res_data[0]), \
+                     num_of_exons_db.get_num_of_exons(res_data[1])]
 
 
         # print results
