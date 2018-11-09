@@ -22,8 +22,9 @@ class NCLevent:
 class ExonExtractor:
     def __init__(self):
         self.tid_pattern = re.compile('transcript_id "([^;]*)";')
-        self.exon_number_pattern = re.compile('exon_number ([0-9]*);')
-        self.transcript_type_pattern = re.compile('transcript_type "([^;]*)";')
+        self.exon_number_pattern = re.compile('exon_number "?([0-9]*)"?;')
+        self.transcript_type_pattern = re.compile('transcript_(?:bio)?type "([^;]*)";')
+        self.transcript_version_pattern = re.compile('transcript_version "([^;]*)";')
 
     def _basic_info_getter(self, data):
         return [data[0], data[3], data[4], data[6]]
@@ -43,6 +44,10 @@ class ExonExtractor:
             if region_type == 'exon':
                 basic_info = self._basic_info_getter(data)
                 exon_tid = re.search(self.tid_pattern, data[8]).group(1)
+                exon_tid_version = re.search(self.transcript_version_pattern, data[8])
+                if exon_tid_version:
+                    exon_tid = "{}.{}".format(exon_tid, exon_tid_version.group(1))
+
                 exon_number = re.search(self.exon_number_pattern, data[8]).group(1)
 
                 transcript_type = re.search(self.transcript_type_pattern, data[8]).group(1)
