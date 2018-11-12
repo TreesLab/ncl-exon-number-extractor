@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import sys
+import argparse
 import re
 import gzip
 from collections import namedtuple
@@ -252,22 +253,25 @@ def open_file(filename):
         return open(filename)
 
 
+def create_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('anno_gtf', help='Annotation file. (".gtf" or ".gtf.gz")')
+    parser.add_argument('--show-all', dest='show_all', action='store_true', help='Debug mode. Show all transcripts that satisfied the criteria.')
+    
+    return parser
+
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print_usage()
-        exit(1)
-    
-    if (len(sys.argv) >= 3) and (sys.argv[2] == 'all'):
-        show_all = True
-    else:
-        show_all = False
+    parser = create_parser()
+    args = parser.parse_args()
+    show_all = args.show_all
+    anno_file = args.anno_gtf
     
 
     # generate db
     ## exons
     exon_extractor = ExonExtractor()
-    with open_file(sys.argv[1]) as anno_data:
+    with open_file(anno_file) as anno_data:
         exon_extractor.extract(anno_data)
 
     junc_sites_db = JunctionSitesDB()
