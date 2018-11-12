@@ -9,6 +9,7 @@ from collections import namedtuple
 from itertools import groupby
 from operator import itemgetter
 
+__version__ = '0.5.0'
 
 JuncSite = namedtuple("JuncSite", ['chr', 'pos', 'strand', 'gene'])
 
@@ -257,6 +258,7 @@ def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('anno_gtf', help='Annotation file. (".gtf" or ".gtf.gz")')
     parser.add_argument('--show-all', dest='show_all', action='store_true', help='Debug mode. Show all transcripts that satisfied the criteria.')
+    parser.add_argument('-V', '--version', action='version', version='{}'.format(__version__))
     
     return parser
 
