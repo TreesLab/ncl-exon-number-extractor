@@ -9,7 +9,7 @@ from collections import namedtuple
 from itertools import groupby
 from operator import itemgetter
 
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 
 JuncSite = namedtuple("JuncSite", ['chr', 'pos', 'strand', 'gene'])
 
@@ -240,11 +240,10 @@ def print_results(results):
 
 def print_usage():
     usage_msg = \
-        "Usage:\n"\
-        "  cat test_NCLscan.result "\
-        "| ./ncl_exon_number_extractor.py gencode.v28.annotation.gtf.gz "\
-        "> test_NCLscan.exon_numbers.result"
-    print(usage_msg, file=sys.stderr)
+        "\n"\
+        "  cat [NCLscan_result] | ./%(prog)s [Anno_gtf] > [Output_file]"\
+
+    return usage_msg
 
 
 def open_file(filename):
@@ -255,7 +254,7 @@ def open_file(filename):
 
 
 def create_parser():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(usage=print_usage())
     parser.add_argument('anno_gtf', help='Annotation file. (".gtf" or ".gtf.gz")')
     parser.add_argument('--show-all', dest='show_all', action='store_true', help='Debug mode. Show all transcripts that satisfied the criteria.')
     parser.add_argument('-V', '--version', action='version', version='{}'.format(__version__))
