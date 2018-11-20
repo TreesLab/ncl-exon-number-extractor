@@ -9,16 +9,15 @@ from collections import namedtuple
 from itertools import groupby
 from operator import itemgetter
 
-__version__ = '0.5.1'
+__version__ = '0.6.0'
 
-JuncSite = namedtuple("JuncSite", ['chr', 'pos', 'strand', 'gene'])
+JuncSite = namedtuple("JuncSite", ['chr', 'pos', 'strand'])
 
 class NCLevent:
     def __init__(self, raw_data):
         self.raw_data = raw_data[:]
-        self.donor = JuncSite(raw_data[0], raw_data[1], raw_data[2], raw_data[6])
-        self.accepter = JuncSite(raw_data[3], raw_data[4], raw_data[5], raw_data[7])
-        self.intragenic = int(raw_data[8])
+        self.donor = JuncSite(raw_data[0], raw_data[1], raw_data[2])
+        self.accepter = JuncSite(raw_data[3], raw_data[4], raw_data[5])
     
     
 class ExonExtractor:
@@ -86,7 +85,7 @@ class IntronExtractor:
     
     def extract(self, exons_data):
         self.introns = []
-        for tid, tid_gp in groupby(exons_data, key=itemgetter(4)):
+        for _, tid_gp in groupby(exons_data, key=itemgetter(4)):
             tid_gp = list(tid_gp)
             for i in range(len(tid_gp) - 1):
                 self.introns.append(self._get_intron(tid_gp[i], tid_gp[i+1]))
@@ -306,28 +305,24 @@ if __name__ == "__main__":
         res_data = []
         len_of_intermediate_exons = []
         
-        if ncl_event.intragenic:
-            the_longest_common_tid = get_longest_common_tid(donor_tids, accepter_tids, \
-                                                            exon_extractor.transcripts, \
-                                                            show_all=show_all)
-            if the_longest_common_tid:
-                exon_number_donor = get_tid_exon_number(donor, the_longest_common_tid)
-                exon_number_accepter = get_tid_exon_number(accepter, the_longest_common_tid)
-                res_data += [the_longest_common_tid, \
-                             the_longest_common_tid, \
-                             exon_number_donor, \
-                             exon_number_accepter]
+        the_longest_common_tid = get_longest_common_tid(donor_tids, accepter_tids, \
+                                                        exon_extractor.transcripts, \
+                                                        show_all=show_all)
+        if the_longest_common_tid:
+            exon_number_donor = get_tid_exon_number(donor, the_longest_common_tid)
+            exon_number_accepter = get_tid_exon_number(accepter, the_longest_common_tid)
+            res_data += [the_longest_common_tid, \
+                            the_longest_common_tid, \
+                            exon_number_donor, \
+                            exon_number_accepter]
 
-                # intermediate exons
-                len_of_intermediate_exons = get_lens_of_intermediate_exons(\
-                                                exons_len_db, \
-                                                the_longest_common_tid, \
-                                                exon_number_accepter, \
-                                                exon_number_donor)
-            else:
-                ncl_event.intragenic = 0
-        
-        if not ncl_event.intragenic:
+            # intermediate exons
+            len_of_intermediate_exons = get_lens_of_intermediate_exons(\
+                                            exons_len_db, \
+                                            the_longest_common_tid, \
+                                            exon_number_accepter, \
+                                            exon_number_donor)
+        else:
             the_longest_tid_donor = get_longest_tid(donor_tids, exon_extractor.transcripts, \
                                                     show_all=show_all)
             the_longest_tid_accepter = get_longest_tid(accepter_tids, \
