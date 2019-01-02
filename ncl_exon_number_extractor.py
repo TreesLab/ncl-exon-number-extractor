@@ -193,13 +193,15 @@ def get_longest_tid(tids, tid_len_dict, show_all=False):
     if tids == []:
         return []
 
-    the_longest_len = max(map(tid_len_dict.get, tids))
-    the_longest = sorted([tid for tid in tids if tid_len_dict.get(tid) == the_longest_len])
-    
-    if not show_all:
+    if show_all:
+        return sorted(tids, key=lambda tid: [tid_len_dict.get(tid), tid], reverse=True)
+
+    else:
+        the_longest_len = max(map(tid_len_dict.get, tids))
+        the_longest = sorted([tid for tid in tids if tid_len_dict.get(tid) == the_longest_len])
         the_longest = [the_longest[0]]
 
-    return the_longest
+        return the_longest
 
 
 def get_longest_common_tid(donor_tids, accepter_tids, tid_len_dict, show_all=False):
@@ -255,7 +257,7 @@ def open_file(filename):
 def create_parser():
     parser = argparse.ArgumentParser(usage=print_usage())
     parser.add_argument('anno_gtf', help='Annotation file. (".gtf" or ".gtf.gz")')
-    parser.add_argument('--show-all', dest='show_all', action='store_true', help='Debug mode. Show all transcripts that satisfied the criteria.')
+    parser.add_argument('--show-all', dest='show_all', action='store_true', help='Show all transcripts that satisfied the criteria.')
     parser.add_argument('-V', '--version', action='version', version='{}'.format(__version__))
     
     return parser
