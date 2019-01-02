@@ -359,6 +359,11 @@ if __name__ == "__main__":
         res_data += [num_of_exons_db.get_num_of_exons(res_data[0]), \
                      num_of_exons_db.get_num_of_exons(res_data[1])]
 
+        # additional transcript info when "--show-all" is toggled
+        if show_all:
+            is_protein_coding_donor, transcript_len_donor = map(list, zip(*[exon_extractor.transcripts[tid] for tid in res_data[0]]))
+            is_protein_coding_acceptor, transcript_len_acceptor = map(list, zip(*[exon_extractor.transcripts[tid] for tid in res_data[1]]))
+            res_data += [is_protein_coding_donor, is_protein_coding_acceptor, transcript_len_donor, transcript_len_acceptor]
 
         # print results
         res_data = ncl_event.raw_data + res_data
