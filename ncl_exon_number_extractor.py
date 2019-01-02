@@ -9,7 +9,7 @@ from collections import namedtuple
 from itertools import groupby
 from operator import itemgetter
 
-__version__ = '0.6.0'
+__version__ = '0.7.0'
 
 JuncSite = namedtuple("JuncSite", ['chr', 'pos', 'strand'])
 
@@ -258,6 +258,7 @@ def create_parser():
     parser = argparse.ArgumentParser(usage=print_usage())
     parser.add_argument('anno_gtf', help='Annotation file. (".gtf" or ".gtf.gz")')
     parser.add_argument('--show-all', dest='show_all', action='store_true', help='Show all transcripts that satisfied the criteria.')
+    parser.add_argument('--expand', action='store_true', help='Show all with expand mode.')
     parser.add_argument('-V', '--version', action='version', version='{}'.format(__version__))
     
     return parser
@@ -366,5 +367,10 @@ if __name__ == "__main__":
             res_data += [is_protein_coding_donor, is_protein_coding_acceptor, transcript_len_donor, transcript_len_acceptor]
 
         # print results
-        res_data = ncl_event.raw_data + res_data
-        print_results(res_data)
+        if show_all and args.expand:
+            for res in zip(*res_data):
+                res = ncl_event.raw_data + list(res)
+                print_results(res)
+        else:
+            res_data = ncl_event.raw_data + res_data
+            print_results(res_data)
