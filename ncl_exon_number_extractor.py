@@ -9,7 +9,7 @@ from collections import namedtuple
 from itertools import groupby
 from operator import itemgetter
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 JuncSite = namedtuple("JuncSite", ['chr', 'pos', 'strand'])
 
@@ -18,8 +18,8 @@ class NCLevent:
         self.raw_data = raw_data[:]
         self.donor = JuncSite(raw_data[0], raw_data[1], raw_data[2])
         self.accepter = JuncSite(raw_data[3], raw_data[4], raw_data[5])
-    
-    
+
+
 class ExonExtractor:
     def __init__(self):
         self.tid_pattern = re.compile('transcript_id "([^;]*)";')
@@ -29,13 +29,13 @@ class ExonExtractor:
 
     def _basic_info_getter(self, data):
         return [data[0], data[3], data[4], data[6]]
-        
+
     def extract(self, data_iter):
         self.transcripts = {}
         self.exons = []
-        
+
         for line in data_iter:
-            
+
             if line.startswith('#'):
                 continue
 
@@ -68,21 +68,21 @@ class ExonExtractor:
 class IntronExtractor:
     def _get_intron(self, exon1, exon2):
         assert exon1[4] == exon2[4]
-        
+
         strand = exon1[3]
         if strand == '+':
             intron_start = int(exon1[2]) + 1
             intron_end = int(exon2[1]) - 1
-            
+
         elif strand == '-':
             intron_start = int(exon2[2]) + 1
             intron_end = int(exon1[1]) - 1
-        
+
         assert intron_start <= intron_end
 
-        intron = [exon1[0], intron_start, intron_end, strand, exon1[4], exon1[5], exon2[5], intron_end - intron_start + 1]    
+        intron = [exon1[0], intron_start, intron_end, strand, exon1[4], exon1[5], exon2[5], intron_end - intron_start + 1]
         return intron
-    
+
     def extract(self, exons_data):
         self.introns = []
         for _, tid_gp in groupby(exons_data, key=itemgetter(4)):
@@ -95,7 +95,7 @@ class JunctionSitesDB:
     def __init__(self):
         self.ncl_donor = {}
         self.ncl_accepter = {}
-    
+
     def _get_donor_accepter(self, exons, di, ai):
         def group_exons(exs):
             for k, gp in groupby(sorted(exs, key=itemgetter(0)), key=itemgetter(0)):
@@ -109,7 +109,7 @@ class JunctionSitesDB:
         grouped_accepter = dict(group_exons(accepter))
 
         return grouped_donor, grouped_accepter
-    
+
     def generate_db(self, exon_data):
         for chrm, chrm_exons in groupby(exon_data, key=itemgetter(0)):
             chrm_exons = list(chrm_exons)
@@ -121,7 +121,7 @@ class JunctionSitesDB:
 
             self.ncl_donor[chrm] = {'+': plus_donor, '-': minus_donor}
             self.ncl_accepter[chrm] = {'+': plus_accepter, '-': minus_accepter}
-            
+
     def get_junc_site(self, junc_site, donor_accepter):
         if donor_accepter == "donor":
             db = self.ncl_donor
@@ -129,7 +129,7 @@ class JunctionSitesDB:
             db = self.ncl_accepter
         else:
             raise ValueError("Only 'donor' or 'accepter' is valid!")
-        
+
         try:
             res = db[junc_site.chr][junc_site.strand][junc_site.pos]
         except KeyError:
@@ -137,19 +137,19 @@ class JunctionSitesDB:
             return []
         else:
             return res
-        
+
 
 class FlankingIntronDB:
     def __init__(self):
         self.db = {}
-    
+
     def generate_db(self, introns_data):
         for tid, tid_gp in groupby(introns_data, key=itemgetter(4)):
             tid_gp = list(tid_gp)
             donor_introns = dict(map(itemgetter(5, 7), tid_gp))
             accepter_introns = dict(map(itemgetter(6, 7), tid_gp))
             self.db[tid] = {'donor': donor_introns, 'accepter': accepter_introns}
-            
+
     def get_flanking_intron(self, tid, exon_number, donor_accepter):
         try:
             intron_len = self.db[tid][donor_accepter][exon_number]
@@ -162,13 +162,13 @@ class FlankingIntronDB:
 class ExonsLengthDB:
     def __init__(self):
         self.db = {}
-        
+
     def generate_db(self, exons_data):
         for tid, tid_gp in groupby(exons_data, key=itemgetter(4)):
             tid_gp = list(tid_gp)
             exon_lens = list(map(itemgetter(6), tid_gp))
             self.db[tid] = exon_lens
-            
+
     def get_total_len_of_intermediate_exons(self, tid, exon_number_1, exon_number_2):
         start_ind = int(exon_number_1) - 1
         stop_ind = int(exon_number_2) - 1 + 1
@@ -178,12 +178,12 @@ class ExonsLengthDB:
 class TranscriptExonsDB:
     def __init__(self):
         self.db = {}
-        
+
     def generate_db(self, exons_data):
         for tid, tid_gp in groupby(exons_data, key=itemgetter(4)):
             num_of_exons = len(list(tid_gp))
             self.db[tid] = num_of_exons
-            
+
     def get_num_of_exons(self, tids):
         return [self.db[tid] for tid in tids]
 
@@ -259,8 +259,9 @@ def create_parser():
     parser.add_argument('anno_gtf', help='Annotation file. (".gtf" or ".gtf.gz")')
     parser.add_argument('--show-all', dest='show_all', action='store_true', help='Show all transcripts that satisfied the criteria.')
     parser.add_argument('--expand', action='store_true', help='Show all with expand mode.')
+    parser.add_argument('--detail', action='store_true', help='Show more detail infomation of transcripts.')
     parser.add_argument('-V', '--version', action='version', version='{}'.format(__version__))
-    
+
     return parser
 
 
@@ -269,7 +270,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     show_all = args.show_all
     anno_file = args.anno_gtf
-    
+
 
     # generate db
     ## exons
@@ -307,48 +308,47 @@ if __name__ == "__main__":
 
         res_data = []
         len_of_intermediate_exons = []
-        
-        the_longest_common_tid = get_longest_common_tid(donor_tids, accepter_tids, \
-                                                        exon_extractor.transcripts, \
+
+        the_longest_common_tid = get_longest_common_tid(donor_tids, accepter_tids,
+                                                        exon_extractor.transcripts,
                                                         show_all=show_all)
         if the_longest_common_tid:
             exon_number_donor = get_tid_exon_number(donor, the_longest_common_tid)
             exon_number_accepter = get_tid_exon_number(accepter, the_longest_common_tid)
-            res_data += [the_longest_common_tid, \
-                            the_longest_common_tid, \
-                            exon_number_donor, \
+            res_data += [the_longest_common_tid,
+                            the_longest_common_tid,
+                            exon_number_donor,
                             exon_number_accepter]
 
             # intermediate exons
-            len_of_intermediate_exons = get_lens_of_intermediate_exons(\
-                                            exons_len_db, \
-                                            the_longest_common_tid, \
-                                            exon_number_accepter, \
+            len_of_intermediate_exons = get_lens_of_intermediate_exons(
+                                            exons_len_db,
+                                            the_longest_common_tid,
+                                            exon_number_accepter,
                                             exon_number_donor)
         else:
-            the_longest_tid_donor = get_longest_tid(donor_tids, exon_extractor.transcripts, \
+            the_longest_tid_donor = get_longest_tid(donor_tids, exon_extractor.transcripts,
                                                     show_all=show_all)
-            the_longest_tid_accepter = get_longest_tid(accepter_tids, \
-                                                        exon_extractor.transcripts, \
+            the_longest_tid_accepter = get_longest_tid(accepter_tids,
+                                                        exon_extractor.transcripts,
                                                         show_all=show_all)
 
             exon_number_donor = get_tid_exon_number(donor, the_longest_tid_donor)
             exon_number_accepter = get_tid_exon_number(accepter, the_longest_tid_accepter)
 
-            res_data += [the_longest_tid_donor, \
-                         the_longest_tid_accepter, \
-                         exon_number_donor, \
+            res_data += [the_longest_tid_donor,
+                         the_longest_tid_accepter,
+                         exon_number_donor,
                          exon_number_accepter]
 
-
         # lens of flanking introns
-        flanking_intron_len_donor = get_flanking_introns(intron_db,\
-                                                         res_data[0], \
-                                                         res_data[2], \
+        flanking_intron_len_donor = get_flanking_introns(intron_db,
+                                                         res_data[0],
+                                                         res_data[2],
                                                          'donor')
-        flanking_intron_len_accepter = get_flanking_introns(intron_db, \
-                                                            res_data[1], \
-                                                            res_data[3], \
+        flanking_intron_len_accepter = get_flanking_introns(intron_db,
+                                                            res_data[1],
+                                                            res_data[3],
                                                             'accepter')
         res_data += [flanking_intron_len_donor, flanking_intron_len_accepter]
 
@@ -357,13 +357,21 @@ if __name__ == "__main__":
         res_data += [len_of_intermediate_exons]
 
         # total number of exons
-        res_data += [num_of_exons_db.get_num_of_exons(res_data[0]), \
+        res_data += [num_of_exons_db.get_num_of_exons(res_data[0]),
                      num_of_exons_db.get_num_of_exons(res_data[1])]
 
-        # additional transcript info when "--show-all" is toggled
-        if show_all:
-            is_protein_coding_donor, transcript_len_donor = map(list, zip(*[exon_extractor.transcripts[tid] for tid in res_data[0]]))
-            is_protein_coding_acceptor, transcript_len_acceptor = map(list, zip(*[exon_extractor.transcripts[tid] for tid in res_data[1]]))
+        # additional transcript info when "--detail" is toggled
+        if args.detail:
+            if len(res_data[0]) > 0:
+                is_protein_coding_donor, transcript_len_donor = map(list, zip(*[exon_extractor.transcripts[tid] for tid in res_data[0]]))
+            else:
+                is_protein_coding_donor, transcript_len_donor = [], []
+
+            if len(res_data[1]) > 0:
+                is_protein_coding_acceptor, transcript_len_acceptor = map(list, zip(*[exon_extractor.transcripts[tid] for tid in res_data[1]]))
+            else:
+                is_protein_coding_acceptor, transcript_len_acceptor = [], []
+
             res_data += [is_protein_coding_donor, is_protein_coding_acceptor, transcript_len_donor, transcript_len_acceptor]
 
         # print results
