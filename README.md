@@ -1,6 +1,6 @@
 ### Usage
 ```
-cat NCLscan.result | ./ncl_exon_number_extractor.py Annotation.gtf.gz > OUTPUT
+cat NCLscan.result | ./ncl_exon_number_extractor.py Annotation.gtf.gz [--show-all] [--expand] [--detail] > OUTPUT
 ```
 
 ### Input
@@ -26,4 +26,12 @@ The following 9 columns are **appended**:
 (7) Total length of intermediate exons
 (8) Total number of exons of the transcript (donor)
 (9) Total number of exons of the transcript (accepter)
+```
+
+In `--detail` mode, there are 4 additional columns:
+```
+(10) Is protein-coding transcript (donor)
+(11) Is protein-coding transcript (acceptor)
+(12) Total length of the transcript (donor)
+(13) Total length of the transcript (acceptor)
 ```
